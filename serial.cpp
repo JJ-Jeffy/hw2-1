@@ -81,6 +81,20 @@ void assign_particles_to_bins(particle_t* parts, int num_parts, double size){
     }
 }
 
+std::vector<std::pair<int, int>> get_neighboring_bins(int binX, int binY, int maxX, int maxY){
+    std::vector<std::pair<int,int>> neighbors; 
+    for (int dx = -1; dx <= 1; ++dx){
+        for (int dy = -1; dy <= 1; ++dy){
+            int newX = binX + dx, newY = binY + dy; 
+            if (newX >= 0 && newX < maxX && newY >= 0 && newY < maxY){
+                neighbors.emplace_back(newX, newY); 
+            }
+        }
+    }
+
+    return neighbors; 
+}
+
 void simulate_one_step(particle_t* parts, int num_parts, double size) {
     // Assign particles to bins 
     assign_particles_to_bins(parts, num_parts, size); 
@@ -108,19 +122,4 @@ void simulate_one_step(particle_t* parts, int num_parts, double size) {
 
     // Re-assign particles to bins after movement 
     assign_particles_to_bins(parts, num_parts, size); 
-}
-
-
-std::vector<std::pair<int, int>> get_neighboring_bins(int binX, int binY, int maxX, int maxY){
-    std::vector<std::pair<int,int>> neighbors; 
-    for (int dx = -1; dx <= 1; ++dx){
-        for (int dy = -1; dy <= 1; ++dy){
-            int newX = binX + dx, newY = binY + dy; 
-            if (newX >= 0 && newX < maxX && newY >= 0 && newY < maxY){
-                neighbors.emplace_back(newX, newY); 
-            }
-        }
-    }
-
-    return neighbors; 
 }
