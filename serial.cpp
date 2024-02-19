@@ -5,6 +5,7 @@
 // Global declaration of bins
 std::vector<std::vector<int>> bins;
 int binCountX, binCountY; // Number of bins in each dimension
+int binSize; 
 
 // Apply the force from neighbor to particle
 void apply_force(particle_t& particle, particle_t& neighbor) {
