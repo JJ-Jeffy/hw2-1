@@ -2,6 +2,8 @@
 #include <cmath>
 #include <vector>
 
+// Giovanni's branch
+
 // Global declaration of bins
 std::vector<std::vector<int>> bins;
 int binCountX, binCountY; // Number of bins in each dimension
