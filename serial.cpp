@@ -53,7 +53,7 @@ void init_simulation(particle_t* parts, int num_parts, double size) {
     // that you may need. This function will be called once before the
     // algorithm begins. Do not do any particle simulation here
     // Initialize binSize based on global cutoff value
-    binSize = static_cast<int>(cutoff * 2); 
+    binSize = std::max(static_cast<int>(std::ceil(cutoff * 2)), 1);
 
     // Calculate the number of bins based on the simulation size and binSize
     int numBinsX = ceil(size / binSize);
