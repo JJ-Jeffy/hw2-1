@@ -50,7 +50,7 @@ void move(particle_t& p, double size) {
 
 
 void init_simulation(particle_t* parts, int num_parts, double size) {
-    binSize = std::max(static_cast<int>(std::ceil(cutoff * 2)), 1);
+    binSize = std::max(static_cast<int>(std::ceil(cutoff * 0.5)), 1); // problem 
     binCountX = std::ceil(size / binSize);
     binCountY = std::ceil(size / binSize);
     bins.resize(binCountX * binCountY);
