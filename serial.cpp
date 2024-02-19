@@ -3,8 +3,8 @@
 #include <vector>
 
 // Global declaration of bins
-std::vector<std::vector<std::vector<int>>> bins;
-int binSize; // This will be initialized based on cutoff
+std::vector<std::vector<int>> bins;
+int binCountX, binCountY; // Number of bins in each dimension
 
 // Apply the force from neighbor to particle
 void apply_force(particle_t& particle, particle_t& neighbor) {
@@ -49,77 +49,63 @@ void move(particle_t& p, double size) {
 
 
 void init_simulation(particle_t* parts, int num_parts, double size) {
-	// You can use this space to initialize static, global data objects
-    // that you may need. This function will be called once before the
-    // algorithm begins. Do not do any particle simulation here
-    // Initialize binSize based on global cutoff value
     binSize = std::max(static_cast<int>(std::ceil(cutoff * 2)), 1);
-
-    // Calculate the number of bins based on the simulation size and binSize
-    int numBinsX = ceil(size / binSize);
-    int numBinsY = ceil(size / binSize);
-    bins.resize(numBinsX, std::vector<std::vector<int>>(numBinsY));
+    binCountX = std::ceil(size / binSize);
+    binCountY = std::ceil(size / binSize);
+    bins.resize(binCountX * binCountY);
 }
 
 // Assign particles to bins 
-void assign_particles_to_bins(particle_t* parts, int num_parts, double size){
-    int numBinsX = ceil(size/binSize);
-    int numBinsY = ceil(size/binSize); 
-
-    // clear bins 
-    for (auto& row : bins){
-        for (auto& bin: row){
-            bin.clear(); 
-        }
+void assign_particles_to_bins(particle_t* parts, int num_parts, double size) {
+    // Clear bins
+    for (auto& bin : bins) {
+        bin.clear();
     }
 
     // Assign particles to bins
-    for (int i = 0; i < num_parts; ++i){
+    for (int i = 0; i < num_parts; ++i) {
         int binX = parts[i].x / binSize; 
-        int binY = parts[i].y / binSize; 
-        bins[binX][binY].push_back(i); 
+        int binY = parts[i].y / binSize;
+        int binIndex = binY * binCountX + binX; // Calculate linear index
+        bins[binIndex].push_back(i);
     }
 }
 
-std::vector<std::pair<int, int>> get_neighboring_bins(int binX, int binY, int maxX, int maxY){
-    std::vector<std::pair<int,int>> neighbors; 
-    for (int dx = -1; dx <= 1; ++dx){
-        for (int dy = -1; dy <= 1; ++dy){
-            int newX = binX + dx, newY = binY + dy; 
-            if (newX >= 0 && newX < maxX && newY >= 0 && newY < maxY){
-                neighbors.emplace_back(newX, newY); 
+std::vector<std::pair<int, int>> get_neighboring_bins(int binX, int binY, int maxX, int maxY) {
+    std::vector<std::pair<int,int>> neighbors;
+    for (int dx = -1; dx <= 1; ++dx) {
+        for (int dy = -1; dy <= 1; ++dy) {
+            int newX = binX + dx, newY = binY + dy;
+            if (newX >= 0 && newX < maxX && newY >= 0 && newY < maxY) {
+                neighbors.emplace_back(newX, newY); // Store as pairs for compatibility
             }
         }
     }
-
-    return neighbors; 
+    return neighbors;
 }
 
 void simulate_one_step(particle_t* parts, int num_parts, double size) {
-    // Assign particles to bins 
-    assign_particles_to_bins(parts, num_parts, size); 
+    // Re-assign particles to bins to account for movement
+    assign_particles_to_bins(parts, num_parts, size);
 
-    // Compute forces with binning 
-    for(int i = 0; i < num_parts; ++i){
-        parts[i].ax = parts[i].ay = 0; 
-        int binX = parts[i].x/binSize; 
-        int binY = parts[i].y/binSize; 
+    // Compute forces with binning
+    for (int i = 0; i < num_parts; ++i) {
+        parts[i].ax = parts[i].ay = 0;
+        int binX = parts[i].x / binSize;
+        int binY = parts[i].y / binSize;
+        int binIndex = binY * binCountX + binX;
 
-        // get neighboring bins 
-        auto neighbors = get_neighboring_bins(binX, binY, bins.size(), bins[0].size()); 
-
-        for (auto &nb: neighbors){
-            for (int j : bins[nb.first][nb.second]) {
-                apply_force(parts[i], parts[j]); 
+        auto neighbors = get_neighboring_bins(binX, binY, binCountX, binCountY);
+        for (auto &[nbX, nbY] : neighbors) {
+            int nbIndex = nbY * binCountX + nbX;
+            for (int j : bins[nbIndex]) {
+                apply_force(parts[i], parts[j]);
             }
         }
     }
 
-    // Move particles 
-    for (int i = 0; i < num_parts; ++i){
-        move(parts[i], size); 
+    // Move particles
+    for (int i = 0; i < num_parts; ++i) {
+        move(parts[i], size);
     }
-
-    // Re-assign particles to bins after movement 
-    assign_particles_to_bins(parts, num_parts, size); 
 }
