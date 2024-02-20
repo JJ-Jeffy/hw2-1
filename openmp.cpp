@@ -1,6 +1,5 @@
 #include "common.h"
 #include <omp.h>
-
 #include <cmath>
 #include <array> 
 
@@ -86,9 +85,10 @@ void assign_particles_to_bins(particle_t* parts, int num_parts, double size) {
 
 void simulate_one_step(particle_t* parts, int num_parts, double size) {
     // Re-assign particles to bins to account for movement
-    assign_particles_to_bins(parts, num_parts, size);
+    // assign_particles_to_bins(parts, num_parts, size);
 
     // Compute forces with binning
+    #pragma omp for
     for (int i = 0; i < num_parts; ++i) {
         parts[i].ax = parts[i].ay = 0;
         int binX = parts[i].x / binSize;
@@ -110,9 +110,19 @@ void simulate_one_step(particle_t* parts, int num_parts, double size) {
     }
 
     // Move particles
+    #pragma omp for
     for (int i = 0; i < num_parts; ++i) {
         move(parts[i], size);
     }
+
+    // Recalculate bins for particles that moved in the previous time step
+    #pragma omp master
+    {
+        assign_particles_to_bins(parts, num_parts, size);
+    }
+    // Synchronize threads
+    #pragma omp barrier
+
      // Clean up bins after each simulation step --> nvm makes it slower
     //cleanup_bins();
 }
