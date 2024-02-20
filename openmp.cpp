@@ -1,5 +1,6 @@
 #include "common.h"
 #include <omp.h>
+
 #include <cmath>
 #include <array> 
 
@@ -16,7 +17,6 @@ struct ListNode {
 std::array<std::array<ListNode*, MAX_PARTICLES>, MAX_PARTICLES> bins; // Use fixed-size array instead of vector
 int binCountX, binCountY; // Number of bins in each dimension
 int binSize; 
-omp_lock_t* locks; 
 
 // Apply the force from neighbor to particle
 void apply_force(particle_t& particle, particle_t& neighbor) {
@@ -63,29 +63,18 @@ void init_simulation(particle_t* parts, int num_parts, double size) {
     binSize = std::max(static_cast<int>(std::ceil(cutoff * 0.5)), 1); 
     binCountX = std::ceil(size / binSize);
     binCountY = std::ceil(size / binSize);
-
-	// #pragma omp parallel for
-	// for (int i = 0; i < binCountX; ++i) {
-	// 	for (int j = 0; j < binCountY; ++j) {
-	// 		omp_init_lock(&locks[i * binCountY + j]); // Initialize locks
-	// 	}
-	// }
 }
 
 // Assign particles to bins 
 void assign_particles_to_bins(particle_t* parts, int num_parts, double size) {
     // Clear bins
-	#pragma omp parallel for
     for (int i = 0; i < binCountX; ++i) {
         for (int j = 0; j < binCountY; ++j) {
             bins[i][j] = nullptr; // Initialize all bins to nullptr
         }
     }
 
-	// Can we initialize this once in the beginning and just clear it later?
-
     // Assign particles to bins
-	#pragma omp for
     for (int i = 0; i < num_parts; ++i) {
         int binX = parts[i].x / binSize; 
         int binY = parts[i].y / binSize;
@@ -97,11 +86,9 @@ void assign_particles_to_bins(particle_t* parts, int num_parts, double size) {
 
 void simulate_one_step(particle_t* parts, int num_parts, double size) {
     // Re-assign particles to bins to account for movement
-	#pragma omp parallel
     assign_particles_to_bins(parts, num_parts, size);
 
     // Compute forces with binning
-	#pragma omp parallel for
     for (int i = 0; i < num_parts; ++i) {
         parts[i].ax = parts[i].ay = 0;
         int binX = parts[i].x / binSize;
@@ -123,18 +110,9 @@ void simulate_one_step(particle_t* parts, int num_parts, double size) {
     }
 
     // Move particles
-	#pragma omp for
     for (int i = 0; i < num_parts; ++i) {
         move(parts[i], size);
     }
      // Clean up bins after each simulation step --> nvm makes it slower
     //cleanup_bins();
 }
-
-// void init_simulation(particle_t* parts, int num_parts, double size) {
-// 	// some code
-// }
-
-// void simulate_one_step(particle_t* parts, int num_parts, double size) {
-// 	// some code
-// }
