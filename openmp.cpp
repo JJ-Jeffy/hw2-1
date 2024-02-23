@@ -4,6 +4,7 @@
 #include <array> 
 
 constexpr int MAX_PARTICLES = 1000000;
+// constexpr int MAX_BINS = 10000; // Choose an appropriate value
 
 // Define a struct for linked list node
 struct ListNode {
@@ -16,6 +17,8 @@ struct ListNode {
 std::array<std::array<ListNode*, MAX_PARTICLES>, MAX_PARTICLES> bins; // Use fixed-size array instead of vector
 int binCountX, binCountY; // Number of bins in each dimension
 int binSize; 
+// omp_lock_t locks[MAX_BINS][MAX_BINS]; // an array to store the locks
+// omp_lock_t** locks; // an array to store the locks 
 
 // Apply the force from neighbor to particle
 void apply_force(particle_t& particle, particle_t& neighbor) {
@@ -62,6 +65,13 @@ void init_simulation(particle_t* parts, int num_parts, double size) {
     binSize = std::max(static_cast<int>(std::ceil(cutoff * 0.5)), 1); 
     binCountX = std::ceil(size / binSize);
     binCountY = std::ceil(size / binSize);
+
+    // Initialize locks for bins
+    // for (int i = 0; i < binCountX; ++i) {
+    //     for (int j = 0; j < binCountY; ++j) {
+    //         omp_init_lock(&locks[i][j]);
+    //     }
+    // }
 }
 
 // Assign particles to bins 
@@ -74,18 +84,19 @@ void assign_particles_to_bins(particle_t* parts, int num_parts, double size) {
     }
 
     // Assign particles to bins
+    // #pragma omp parallel for 
     for (int i = 0; i < num_parts; ++i) {
-        int binX = parts[i].x / binSize; 
+        int binX = parts[i].x / binSize;
         int binY = parts[i].y / binSize;
+        // omp_set_lock(&locks[binX][binY]);
         bins[binX][binY] = new ListNode(i); // Assign a new node to the bin
+        // omp_unset_lock(&locks[binX][binY]);
     }
 }
 
 
-
 void simulate_one_step(particle_t* parts, int num_parts, double size) {
     // Re-assign particles to bins to account for movement
-    // assign_particles_to_bins(parts, num_parts, size);
 
     // Compute forces with binning
     #pragma omp for
@@ -114,6 +125,8 @@ void simulate_one_step(particle_t* parts, int num_parts, double size) {
     for (int i = 0; i < num_parts; ++i) {
         move(parts[i], size);
     }
+
+    // assign_particles_to_bins(parts, num_parts, size);
 
     // Recalculate bins for particles that moved in the previous time step
     #pragma omp master
