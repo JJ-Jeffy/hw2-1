@@ -1,0 +1,2 @@
+srun: error: nid004754: task 0: Segmentation fault
+srun: Terminating StepId=22032900.0
