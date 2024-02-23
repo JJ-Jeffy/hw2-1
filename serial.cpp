@@ -1,5 +1,21 @@
+
 #include "common.h"
 #include <cmath>
+#include <array> 
+
+constexpr int MAX_PARTICLES = 1000000;
+
+// Define a struct for linked list node
+struct ListNode {
+    int index;
+    ListNode* next;
+    ListNode(int idx) : index(idx), next(nullptr) {}
+};
+
+// Global declaration of bins
+std::array<std::array<ListNode*, MAX_PARTICLES>, MAX_PARTICLES> bins; // Use fixed-size array instead of vector
+int binCountX, binCountY; // Number of bins in each dimension
+int binSize; 
 
 // Apply the force from neighbor to particle
 void apply_force(particle_t& particle, particle_t& neighbor) {
@@ -42,24 +58,60 @@ void move(particle_t& p, double size) {
     }
 }
 
-
 void init_simulation(particle_t* parts, int num_parts, double size) {
-	// You can use this space to initialize static, global data objects
-    // that you may need. This function will be called once before the
-    // algorithm begins. Do not do any particle simulation here
+    binSize = std::max(static_cast<int>(std::ceil(cutoff * 0.5)), 1); 
+    binCountX = std::ceil(size / binSize);
+    binCountY = std::ceil(size / binSize);
 }
 
-void simulate_one_step(particle_t* parts, int num_parts, double size) {
-    // Compute Forces
-    for (int i = 0; i < num_parts; ++i) {
-        parts[i].ax = parts[i].ay = 0;
-        for (int j = 0; j < num_parts; ++j) {
-            apply_force(parts[i], parts[j]);
+// Assign particles to bins 
+void assign_particles_to_bins(particle_t* parts, int num_parts, double size) {
+    // Clear bins
+    for (int i = 0; i < binCountX; ++i) {
+        for (int j = 0; j < binCountY; ++j) {
+            bins[i][j] = nullptr; // Initialize all bins to nullptr
         }
     }
 
-    // Move Particles
+    // Assign particles to bins
+    for (int i = 0; i < num_parts; ++i) {
+        int binX = parts[i].x / binSize; 
+        int binY = parts[i].y / binSize;
+        bins[binX][binY] = new ListNode(i); // Assign a new node to the bin
+    }
+}
+
+
+
+void simulate_one_step(particle_t* parts, int num_parts, double size) {
+    // Re-assign particles to bins to account for movement
+    assign_particles_to_bins(parts, num_parts, size);
+
+    // Compute forces with binning
+    for (int i = 0; i < num_parts; ++i) {
+        parts[i].ax = parts[i].ay = 0;
+        int binX = parts[i].x / binSize;
+        int binY = parts[i].y / binSize;
+
+        // Iterate through neighboring bins
+        for (int dx = -1; dx <= 1; ++dx) {
+            for (int dy = -1; dy <= 1; ++dy) {
+                int newX = binX + dx, newY = binY + dy;
+                if (newX >= 0 && newX < binCountX && newY >= 0 && newY < binCountY) {
+                    ListNode* node = bins[newX][newY]; // Get the head of the linked list
+                    while (node != nullptr) {
+                        apply_force(parts[i], parts[node->index]);
+                        node = node->next;
+                    }
+                }
+            }
+        }
+    }
+
+    // Move particles
     for (int i = 0; i < num_parts; ++i) {
         move(parts[i], size);
     }
+     // Clean up bins after each simulation step --> nvm makes it slower
+    //cleanup_bins();
 }
