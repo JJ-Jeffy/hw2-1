@@ -1,4 +1,0 @@
-/global/homes/j/jj-jeffy/Berkeley267/hw2/hw2-1/build/CMakeFiles/serial.dir
-/global/homes/j/jj-jeffy/Berkeley267/hw2/hw2-1/build/CMakeFiles/openmp.dir
-/global/homes/j/jj-jeffy/Berkeley267/hw2/hw2-1/build/CMakeFiles/edit_cache.dir
-/global/homes/j/jj-jeffy/Berkeley267/hw2/hw2-1/build/CMakeFiles/rebuild_cache.dir
